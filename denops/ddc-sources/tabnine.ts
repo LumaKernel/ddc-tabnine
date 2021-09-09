@@ -4,11 +4,11 @@ import {
   GatherCandidatesArguments,
   path,
   xdg,
+  Mutex,
 } from "../ddc-tabnine/deps.ts";
 import { TabNineNotInstalled } from "../ddc-tabnine/tabnine/client_base.ts";
 import { TabNineV2 } from "../ddc-tabnine/tabnine/client_v2.ts";
-import { getAround } from "../ddc-tabnine/internal_autoload_fs.ts";
-import { Mutex } from "https://deno.land/x/semaphore@v1.1.0/mod.ts";
+import { getAround } from "../ddc-tabnine/internal_autoload_fn.ts";
 
 type Params = {
   maxSize: number;

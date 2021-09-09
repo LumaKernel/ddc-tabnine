@@ -7,7 +7,7 @@
 "   boolean,
 "   number,
 " ]}
-function! dps#ddc_tabnine#internal#get_around(limit) abort
+function! ddc_tabnine#internal#get_around(limit) abort
   let [_, line, col; _] = getpos('.')
   let last_line = line('$')
   let before_line = max([1, line - a:limit])

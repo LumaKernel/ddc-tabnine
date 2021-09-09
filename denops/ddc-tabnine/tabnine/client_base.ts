@@ -1,10 +1,12 @@
-import * as semver from "https://deno.land/x/semver@v1.4.0/mod.ts";
-import { Mutex } from "https://deno.land/x/semaphore@v1.1.0/mod.ts";
-import * as path from "https://deno.land/std@0.106.0/path/mod.ts";
-import * as io from "https://deno.land/std@0.106.0/io/mod.ts";
-import * as fs from "https://deno.land/std@0.106.0/fs/mod.ts";
-import { unZipFromFile } from "https://deno.land/x/zip@v1.1.0/mod.ts";
-import { assert } from "https://deno.land/std@0.106.0/testing/asserts.ts";
+import {
+  semver,
+  Mutex,
+  path,
+  io,
+  fs,
+  unZipFromFile,
+  assert,
+} from "../deps.ts";
 
 export class TabNineNotInstalled extends Error {
   constructor(storagePath?: string) {

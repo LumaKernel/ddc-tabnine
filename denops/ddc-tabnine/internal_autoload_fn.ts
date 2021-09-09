@@ -21,5 +21,5 @@ export type GetAround = (
   number,
 ]>;
 export const getAround = createCaller(
-  "dps#ddc_tabnine#internal#get_around",
+  "ddc_tabnine#internal#get_around",
 ) as GetAround;

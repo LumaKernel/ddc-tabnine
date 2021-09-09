@@ -17,7 +17,7 @@ This source collects candidates from [TabNine](https://www.tabnine.com).
   - [ ] `call ddc_tabnine#config_path()` - get config path
 - [x] Write docs
 - [ ] When installing, remove other old version binaries.
-- [ ] Refactoring around imports.
+- [x] Refactoring around imports.
 
 ## Required
 
