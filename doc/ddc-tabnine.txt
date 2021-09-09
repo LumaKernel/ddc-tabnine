@@ -1,0 +1,67 @@
+*ddc-tabnine.txt*				TabNine Completion for ddc.vim
+
+Author : Luma <world@luma.email>
+License: MIT <https://github.com/LumaKernel/ddc-tabnine/blob/main/LICENSE>
+
+
+==============================================================================
+CONTENTS					        *ddc-tabnine-contents*
+
+INTRODUCTION					    |ddc-tabnine-introduction|
+INSTALL							 |ddc-tabnine-install|
+EXAMPLES						|ddc-tabnine-examples|
+PARAMS							  |ddc-tabnine-params|
+
+==============================================================================
+INTRODUCTION					    *ddc-tabnine-introduction*
+
+This source collects candidates from TabNine. TabNine binary is automatically
+installed when completion starts.
+
+==============================================================================
+INSTALL							 *ddc-tabnine-install*
+
+Please install both "ddc.vim" and "denops.vim".
+
+https://github.com/Shougo/ddc.vim
+https://github.com/vim-denops/denops.vim
+
+
+==============================================================================
+EXAMPLES						*ddc-tabnine-examples*
+>
+	call ddc#custom#patch_global('sources', ['tabnine'])
+	call ddc#custom#patch_global('sourceOptions', {
+	    \ 'tabnine': {
+	    \   'mark': 'TN',
+	    \   'isVolatile': v:true,
+	    \   'maxSize': 200,
+	    \ }})
+<
+
+==============================================================================
+PARAMS							  *ddc-tabnine-params*
+
+						   *ddc-tabnine-param-maxSize*
+maxSize		(number)
+		Fixed range of looking for words lines above and below your
+		cursor position.
+
+		Default: 200
+
+					     *ddc-tabnine-param-maxNumResults*
+maxNumResults	(number)
+		Max number of results to retrieve. Preferable to use rather
+		than built-in's |ddc-source-option-maxCandidates| since this
+		is natively implemented by TabNine.
+
+		Default: 5
+
+						*ddc-tabnine-param-storageDir*
+storageDir	(string)
+		Storage path placement to store binary files.
+
+		Default: <XDG Cache Dir>
+
+==============================================================================
+vim:tw=78:ts=8:noet:ft=help:norl
