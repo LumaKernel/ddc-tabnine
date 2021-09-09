@@ -104,7 +104,7 @@ export class Source extends BaseSource {
     const cs: Candidate[] =
       res?.results?.filter((e) => e?.new_prefix).map((e) => ({
         word: e.new_prefix,
-        abbr: e.detail && `${e.new_prefix}\t${e.detail}`,
+        menu: e.detail,
       })) ?? [];
     return cs;
   }
