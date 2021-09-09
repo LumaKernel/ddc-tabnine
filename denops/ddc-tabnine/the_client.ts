@@ -1,0 +1,69 @@
+import { Mutex } from "../ddc-tabnine/deps.ts";
+import { TabNineV2 } from "./tabnine/client_v2.ts";
+
+class ClientCreator {
+  private client?: TabNineV2;
+  private clientCloser?: () => void;
+  private mutex = new Mutex();
+  private clientStorageDir?: string;
+
+  isStarted(): boolean {
+    return Boolean(this.client);
+  }
+
+  private recreateClient(storageDir: string) {
+    const oldClient = this.client;
+    const oldClientCloser = this.clientCloser;
+    this.client = undefined;
+    this.clientCloser = undefined;
+    this.clientStorageDir = storageDir;
+    oldClient?.close();
+    const newClient = this.client = new TabNineV2(
+      "ddc.vim",
+      storageDir,
+    );
+    this.clientCloser = () => newClient.close();
+    return this.client;
+  }
+
+  async getClient(storageDir: string): Promise<TabNineV2> {
+    const release = await this.mutex.acquire();
+    try {
+      return await this.getClientUnlocked(storageDir);
+    } finally {
+      release();
+    }
+  }
+
+  async getClientUnlocked(storageDir: string): Promise<TabNineV2> {
+    if (!this.client || storageDir !== this.clientStorageDir) {
+      if (this.clientStorageDir && storageDir !== this.clientStorageDir) {
+        console.log("[ddc-tabnine] Storage dir is updated. Restarting...");
+      }
+      const client = this.recreateClient(storageDir);
+      const version = await TabNineV2.getLatestVersion();
+      if (!(await client.isInstalled(version))) {
+        console.log(
+          `[ddc-tabnine] Installing TabNine cli version ${version}...`,
+        );
+        try {
+          await client.installTabNine(version);
+        } catch (e: unknown) {
+          try {
+            console.error(
+              `[ddc-tabnine] Failed to TabNine cli version ${version}.`,
+            );
+          } finally {
+            await client.cleanTabNine(version);
+            throw e;
+          }
+        }
+      }
+      return client;
+    }
+    return this.client;
+  }
+}
+
+const theClient = new ClientCreator();
+export default theClient;

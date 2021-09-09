@@ -1,35 +1,12 @@
-import {
-  semver,
-  Mutex,
-  path,
-  io,
-  fs,
-  unZipFromFile,
-  assert,
-} from "../deps.ts";
-
-export class TabNineNotInstalled extends Error {
-  constructor(storagePath?: string) {
-    super(
-      storagePath
-        ? `TabNine not installed in ${storagePath}`
-        : `TabNine not installed`,
-    );
-
-    if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, TabNineNotInstalled);
-    }
-    this.name = "TabNineNotInstalled";
-  }
-}
+import { assert, fs, io, Mutex, path, semver, unZipFromFile } from "../deps.ts";
 
 export class TabNine {
   private proc?: Deno.Process;
   private procAlive = false;
   private binaryPath?: string;
-  private mutex: Mutex = new Mutex();
+  private mutex = new Mutex();
   private lines?: AsyncIterator<string>;
-  numRestarts = 0;
+  private numRestarts = 0;
 
   constructor(
     public clientName: string,
@@ -39,6 +16,7 @@ export class TabNine {
   async request(request: unknown): Promise<unknown> {
     const release = await this.mutex.acquire();
     try {
+      this.numRestarts = 0;
       return await this.requestUnlocked(request);
     } finally {
       release();
@@ -50,7 +28,7 @@ export class TabNine {
   ): Promise<unknown> {
     const requestStr = JSON.stringify(request) + "\n";
     if (!this.isChildAlive()) {
-      await this.restartChild();
+      await this.restartChildLimited();
     }
     if (!this.isChildAlive()) {
       throw new Error("TabNine process is dead.");
@@ -72,7 +50,12 @@ export class TabNine {
     return Boolean(this.proc) && this.procAlive;
   }
 
-  private async restartChild(): Promise<void> {
+  async restartChild(): Promise<void> {
+    this.numRestarts = 0;
+    await this.restartChildLimited();
+  }
+
+  private async restartChildLimited(): Promise<void> {
     if (this.numRestarts >= 10) {
       return;
     }
@@ -161,6 +144,11 @@ export class TabNine {
     }
   }
 
+  async cleanAllVersions(): Promise<void> {
+    const versions = await this.getInstalledVersions();
+    await Promise.all(versions.map((ver) => this.cleanTabNine(ver)));
+  }
+
   async cleanTabNine(
     version: string,
   ): Promise<void> {
@@ -180,7 +168,7 @@ export class TabNine {
     this.proc?.kill(Deno.Signal.SIGINT);
   }
 
-  static async getTabNineLatestVersion(): Promise<string> {
+  static async getLatestVersion(): Promise<string> {
     const url = "https://update.tabnine.com/bundles/version";
     const res = await fetch(url);
     if (!res.body) {
@@ -224,7 +212,7 @@ export class TabNine {
     const versions = await this.getInstalledVersions();
 
     if (!versions || versions.length == 0) {
-      throw new TabNineNotInstalled(this.storagePath);
+      throw new Error(`TabNine not installed in ${this.storagePath}`);
     }
 
     const sortedVersions = TabNine.sortBySemver(versions);

@@ -9,13 +9,14 @@ This source collects candidates from [TabNine](https://www.tabnine.com).
 ## TODOs
 
 - [x] Provide completion to ddc.vim.
-- [ ] Define some util functions.
-  - [ ] `call ddc_tabnine#reinstall()` - to remedy. clear all and reinstall
-  - [ ] `call ddc_tabnine#clean()` - to remedy. remove all versions
-  - [ ] `call ddc_tabnine#which()` - which binaries are used
-  - [ ] `call ddc_tabnine#version()` - get binary version
-  - [ ] `call ddc_tabnine#config_path()` - get config path
+- [x] Define some util functions.
+  - [x] `call ddc_tabnine#reinstall()` - to remedy. clean all and reinstall
+  - [x] `call ddc_tabnine#clean()` - to remedy. remove all versions
+  - [x] `call ddc_tabnine#which()` - which binaries are used
+  - [x] `call ddc_tabnine#version()` - get binary version
+  - [x] `call ddc_tabnine#config_path()` - get config path
 - [x] Write docs
+- [ ] Write docs for functions
 - [ ] When installing, remove other old version binaries.
 - [x] Refactoring around imports.
 
@@ -43,7 +44,7 @@ You can trigger the
 your TabNine like `TabNine::config` in any buffer.
 
 (Optional) To configure your purchased API key, use `TabNine::config` or
-`:exe 'e' ddc_tabnine#config_path()`.
+`:exe 'e' ddc_tabnine#config_dir() . '/tabnine_config.json'`.
 
 ## Credits
 

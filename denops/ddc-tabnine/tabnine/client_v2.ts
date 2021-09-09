@@ -25,7 +25,7 @@ export interface TabNineV2AutoCompleteResponseResult {
    */
   detail: string | null;
   documentation: unknown;
-  deprecated: bool | null;
+  deprecated: boolean | null;
 }
 
 export interface TabNineV2AutoCompleteResponse {
@@ -70,6 +70,25 @@ export class TabNineV2 extends TabNine {
         Autocomplete: {
           filename: null,
           before: "TabNine::config_dir",
+          after: "",
+          region_includes_beginning: true,
+          region_includes_end: true,
+          max_num_results: 1,
+        },
+      },
+    });
+    const configDir = response?.results?.[0]?.new_prefix;
+    if (typeof configDir === "string") return configDir;
+    return null;
+  }
+  async requestVersion(): Promise<string | null> {
+    // deno-lint-ignore no-explicit-any
+    const response: any = await super.request({
+      version: TabNineV2.apiVersion,
+      request: {
+        Autocomplete: {
+          filename: null,
+          before: "TabNine::version",
           after: "",
           region_includes_beginning: true,
           region_includes_end: true,

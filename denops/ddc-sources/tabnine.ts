@@ -3,11 +3,12 @@ import {
   Candidate,
   GatherCandidatesArguments,
   path,
-  xdg,
-  Mutex,
 } from "../ddc-tabnine/deps.ts";
-import { TabNineNotInstalled } from "../ddc-tabnine/tabnine/client_base.ts";
-import { TabNineV2 } from "../ddc-tabnine/tabnine/client_v2.ts";
+import {
+  defaultStorageDir,
+  getStorageDir,
+} from "../ddc-tabnine/storage_dir.ts";
+import theClient from "../ddc-tabnine/the_client.ts";
 import { getAround } from "../ddc-tabnine/internal_autoload_fn.ts";
 
 type Params = {
@@ -17,68 +18,11 @@ type Params = {
 };
 
 export class Source extends BaseSource {
-  static readonly defaultStorageDir = path.join(
-    xdg.cache(),
-    "ddc-tabnine",
-  );
   static readonly defaultParams: Readonly<Params> = {
     maxSize: 200,
     maxNumResults: 5,
-    storageDir: Source.defaultStorageDir,
+    storageDir: defaultStorageDir,
   };
-
-  private client?: TabNineV2;
-  private clientCloser?: () => void;
-  private mutex: Mutex = new Mutex();
-
-  private recreateClient() {
-    const oldClient = this.client;
-    const oldClientCloser = this.clientCloser;
-    this.client = undefined;
-    this.clientCloser = undefined;
-    oldClient?.close();
-    const newClient = this.client = new TabNineV2(
-      "ddc.vim",
-      Source.defaultStorageDir,
-    );
-    this.clientCloser = () => newClient.close();
-    return this.client;
-  }
-
-  private async getClient(): Promise<TabNineV2> {
-    const release = await this.mutex.acquire();
-    try {
-      return await this.getClientUnlocked();
-    } finally {
-      release();
-    }
-  }
-
-  private async getClientUnlocked(): Promise<TabNineV2> {
-    if (!this.client) {
-      const client = this.recreateClient();
-      const version = await TabNineV2.getTabNineLatestVersion();
-      if (!(await client.isInstalled(version))) {
-        console.log(
-          `[ddc-tabnine] Installing TabNine cli version ${version}...`,
-        );
-        try {
-          await client.installTabNine(version);
-        } catch (e: unknown) {
-          try {
-            console.error(
-              `[ddc-tabnine] Failed to TabNine cli version ${version}.`,
-            );
-          } finally {
-            await client.cleanTabNine(version);
-            throw e;
-          }
-        }
-      }
-      return client;
-    }
-    return this.client;
-  }
 
   async gatherCandidates(
     args: GatherCandidatesArguments,
@@ -86,37 +30,33 @@ export class Source extends BaseSource {
     const p = args.sourceParams as Partial<Params>;
 
     const [
-      filename,
-      before,
-      after,
-      regionIncludesBeginning,
-      regionIncludesEnd,
-    ] = await getAround(args.denops, p.maxSize || Source.defaultParams.maxSize);
-
-    const client = await this.getClient();
-    try {
-      const res = await client.requestAutocomplete({
-        maxNumResults: p.maxNumResults || Source.defaultParams.maxNumResults,
+      [
         filename,
         before,
         after,
         regionIncludesBeginning,
         regionIncludesEnd,
-      });
-      const cs: Candidate[] = res?.results?.filter((e) =>
-        e?.new_prefix
-      ).map((e) => ({
+      ],
+      storageDir,
+    ] = await Promise.all([
+      getAround(args.denops, p.maxSize || Source.defaultParams.maxSize),
+      getStorageDir(args.denops),
+    ]);
+    const client = await theClient.getClient(storageDir);
+    const res = await client.requestAutocomplete({
+      maxNumResults: p.maxNumResults || Source.defaultParams.maxNumResults,
+      filename,
+      before,
+      after,
+      regionIncludesBeginning,
+      regionIncludesEnd,
+    });
+    const cs: Candidate[] =
+      res?.results?.filter((e) => e?.new_prefix).map((e) => ({
         word: e.new_prefix,
-        menu: e.detail,
+        menu: e.detail ?? undefined,
       })) ?? [];
-      return cs;
-    } catch (e: unknown) {
-      if (e instanceof TabNineNotInstalled) {
-        console.log("Reinstalling binary scheduled.");
-        this.client = undefined;
-      }
-      throw e;
-    }
+    return cs;
   }
 
   params(): Record<string, unknown> {

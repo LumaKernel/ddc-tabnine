@@ -60,6 +60,7 @@ maxNumResults	(number)
 
 						*ddc-tabnine-param-storageDir*
 storageDir	(string)
+		Global only and not configurable by `_`.
 		Storage path placement to store binary files.
 
 		Default: <XDG Cache Dir>
