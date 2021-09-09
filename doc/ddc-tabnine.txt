@@ -15,8 +15,9 @@ PARAMS							  |ddc-tabnine-params|
 ==============================================================================
 INTRODUCTION					    *ddc-tabnine-introduction*
 
-This source collects candidates from TabNine. TabNine binary is automatically
-installed when completion starts.
+This source collects candidates from TabNine (https://www.tabnine.com).
+TabNine binaries are automatically installed when first time completion
+starts.
 
 ==============================================================================
 INSTALL							 *ddc-tabnine-install*
