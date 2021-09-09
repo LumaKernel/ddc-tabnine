@@ -148,10 +148,10 @@ export class TabNine {
 
   async cleanAllVersions(): Promise<void> {
     const versions = await this.getInstalledVersions();
-    await Promise.all(versions.map((ver) => this.cleanTabNine(ver)));
+    await Promise.all(versions.map((ver) => this.cleanVersion(ver)));
   }
 
-  async cleanTabNine(
+  async cleanVersion(
     version: string,
   ): Promise<void> {
     const archAndPlatform = TabNine.getArchAndPlatform();

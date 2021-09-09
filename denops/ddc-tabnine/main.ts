@@ -26,8 +26,8 @@ export async function main(denops: Denops): Promise<void> {
     },
     async [dispatcherNames.DDC_TABNINE_REINSTALL](): Promise<void> {
       const storageDir = await getStorageDir(denops);
+      await theClient.reinstall(storageDir);
       const client = await theClient.getClient(storageDir);
-      await client.cleanAllVersions();
       await client.restartProc();
     },
     async [dispatcherNames.DDC_TABNINE_IS_RUNNING](): Promise<boolean> {

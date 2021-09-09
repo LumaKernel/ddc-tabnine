@@ -20,6 +20,17 @@ class ClientCreator {
     return this.client;
   }
 
+  async reinstall(storageDir: string): Promise<void> {
+    const release = await this.mutex.acquire();
+    try {
+      const client = await this.getClientUnlocked(storageDir);
+      await client.cleanAllVersions();
+      await client.installTabNine(await TabNineV2.getLatestVersion());
+    } finally {
+      release();
+    }
+  }
+
   async getClient(storageDir: string): Promise<TabNineV2> {
     const release = await this.mutex.acquire();
     try {
@@ -48,7 +59,7 @@ class ClientCreator {
               `[ddc-tabnine] Failed to install TabNine cli version ${version}.`,
             );
           } finally {
-            await client.cleanTabNine(version);
+            await client.cleanVersion(version);
           }
           throw e;
         }
@@ -60,5 +71,7 @@ class ClientCreator {
   }
 }
 
+// Singleton client. To make this a real singleton, use the client
+// from other denops plugins only via denops.dispatch().
 const theClient = new ClientCreator();
 export default theClient;

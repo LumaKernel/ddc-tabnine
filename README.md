@@ -1,5 +1,7 @@
 # ddc-tabnine
 
+[![Doc](https://img.shields.io/badge/doc-%3Ah%20ddc--tabnine-orange.svg?style=flat-square)](doc/ddc-tabnine.txt)
+
 [TabNine](https://www.tabnine.com) Completion for ddc.vim
 
 This source collects candidates from [TabNine](https://www.tabnine.com).
