@@ -1,12 +1,12 @@
 import { TabNine } from "./client_base.ts";
 
 export interface TabNineV2AutoCompleteRequest {
-  filename: string;
+  filename: string | null;
   before: string;
   after: string;
   regionIncludesBeginning: boolean;
   regionIncludesEnd: boolean;
-  maxNumResults: number;
+  maxNumResults: number | null;
 }
 
 export interface TabNineV2AutoCompleteResponseResult {
@@ -19,10 +19,13 @@ export interface TabNineV2AutoCompleteResponseResult {
    */
   old_suffix: string;
   new_suffix: string;
+  kind: unknown;
   /**
    * @example "32%"
    */
-  detail: string;
+  detail: string | null;
+  documentation: unknown;
+  deprecated: bool | null;
 }
 
 export interface TabNineV2AutoCompleteResponse {
@@ -65,12 +68,12 @@ export class TabNineV2 extends TabNine {
       version: TabNineV2.apiVersion,
       request: {
         Autocomplete: {
-          filename: "1",
+          filename: null,
           before: "TabNine::config_dir",
-          after: "\n",
+          after: "",
           region_includes_beginning: true,
           region_includes_end: true,
-          max_num_results: 5,
+          max_num_results: 1,
         },
       },
     });

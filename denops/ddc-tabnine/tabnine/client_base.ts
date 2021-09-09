@@ -6,6 +6,21 @@ import * as fs from "https://deno.land/std@0.106.0/fs/mod.ts";
 import { unZipFromFile } from "https://deno.land/x/zip@v1.1.0/mod.ts";
 import { assert } from "https://deno.land/std@0.106.0/testing/asserts.ts";
 
+export class TabNineNotInstalled extends Error {
+  constructor(storagePath?: string) {
+    super(
+      storagePath
+        ? `TabNine not installed in ${storagePath}`
+        : `TabNine not installed`,
+    );
+
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, TabNineNotInstalled);
+    }
+    this.name = "TabNineNotInstalled";
+  }
+}
+
 export class TabNine {
   private proc?: Deno.Process;
   private procAlive = false;
@@ -90,8 +105,9 @@ export class TabNine {
     const destDir = path.join(
       this.storagePath,
       "binaries",
-      archAndPlatform,
       version,
+      archAndPlatform,
+      Deno.build.os === "windows" ? "TabNine.exe" : "TabNine",
     );
     return await fs.exists(destDir);
   }
@@ -103,8 +119,8 @@ export class TabNine {
     const destDir = path.join(
       this.storagePath,
       "binaries",
-      archAndPlatform,
       version,
+      archAndPlatform,
     );
 
     const url =
@@ -124,9 +140,14 @@ export class TabNine {
         write: true,
         create: true,
       });
-      const reader = io.readerFromStreamReader(res.body.getReader());
-      await io.copy(reader, destFile);
-      await unZipFromFile(zipPath, destDir);
+      try {
+        const reader = io.readerFromStreamReader(res.body.getReader());
+        await io.copy(reader, destFile);
+        await unZipFromFile(zipPath, destDir);
+      } finally {
+        destFile.close();
+      }
+      await Deno.remove(zipPath);
     }
     for (let b of binaries) {
       if (Deno.build.os == "windows") b = b + ".exe";
@@ -145,8 +166,8 @@ export class TabNine {
     const destDir = path.join(
       this.storagePath,
       "binaries",
-      archAndPlatform,
       version,
+      archAndPlatform,
     );
     if (await fs.exists(destDir)) {
       await Deno.remove(destDir, { recursive: true });
@@ -163,6 +184,9 @@ export class TabNine {
     if (!res.body) {
       throw Object.assign(new Error(`Body not found: ${url}`), { res });
     }
+    if (!res.ok) {
+      throw Object.assign(new Error(`Response status not ok: ${url}`), { res });
+    }
     const version = new TextDecoder().decode(
       await io.readAll(io.readerFromStreamReader(res.body.getReader())),
     );
@@ -172,21 +196,33 @@ export class TabNine {
   async getInstalledVersions(): Promise<string[]> {
     const versions: string[] = [];
     const archAndPlatform = TabNine.getArchAndPlatform();
-    const binaries = path.join(this.storagePath, "binaries", archAndPlatform);
+    const binaries = path.join(this.storagePath, "binaries");
     if (!(await fs.exists(binaries))) return [];
     for await (const version of Deno.readDir(binaries)) {
-      versions.push(version.name);
+      if (
+        semver.valid(version.name) &&
+        await fs.exists(
+          path.join(
+            binaries,
+            version.name,
+            archAndPlatform,
+            Deno.build.os == "windows" ? "TabNine.exe" : "TabNine",
+          ),
+        )
+      ) {
+        versions.push(version.name);
+      }
     }
     return versions;
   }
 
   async getBinaryPath(): Promise<string> {
     const archAndPlatform = TabNine.getArchAndPlatform();
-    const binaries = path.join(this.storagePath, "binaries", archAndPlatform);
+    const binaries = path.join(this.storagePath, "binaries");
     const versions = await this.getInstalledVersions();
 
     if (!versions || versions.length == 0) {
-      throw new Error("TabNine not installed");
+      throw new TabNineNotInstalled(this.storagePath);
     }
 
     const sortedVersions = TabNine.sortBySemver(versions);
@@ -196,6 +232,7 @@ export class TabNine {
       const fullPath = path.join(
         binaries,
         version,
+        archAndPlatform,
         Deno.build.os == "windows" ? "TabNine.exe" : "TabNine",
       );
       if (await fs.exists(fullPath)) {

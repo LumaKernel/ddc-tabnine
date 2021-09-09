@@ -5,6 +5,7 @@ import {
   path,
   xdg,
 } from "../ddc-tabnine/deps.ts";
+import { TabNineNotInstalled } from "../ddc-tabnine/tabnine/client_base.ts";
 import { TabNineV2 } from "../ddc-tabnine/tabnine/client_v2.ts";
 import { getAround } from "../ddc-tabnine/internal_autoload_fs.ts";
 import { Mutex } from "https://deno.land/x/semaphore@v1.1.0/mod.ts";
@@ -93,20 +94,29 @@ export class Source extends BaseSource {
     ] = await getAround(args.denops, p.maxSize || Source.defaultParams.maxSize);
 
     const client = await this.getClient();
-    const res = await client.requestAutocomplete({
-      maxNumResults: p.maxNumResults || Source.defaultParams.maxNumResults,
-      filename,
-      before,
-      after,
-      regionIncludesBeginning,
-      regionIncludesEnd,
-    });
-    const cs: Candidate[] =
-      res?.results?.filter((e) => e?.new_prefix).map((e) => ({
+    try {
+      const res = await client.requestAutocomplete({
+        maxNumResults: p.maxNumResults || Source.defaultParams.maxNumResults,
+        filename,
+        before,
+        after,
+        regionIncludesBeginning,
+        regionIncludesEnd,
+      });
+      const cs: Candidate[] = res?.results?.filter((e) =>
+        e?.new_prefix
+      ).map((e) => ({
         word: e.new_prefix,
         menu: e.detail,
       })) ?? [];
-    return cs;
+      return cs;
+    } catch (e: unknown) {
+      if (e instanceof TabNineNotInstalled) {
+        console.log("Reinstalling binary scheduled.");
+        this.client = undefined;
+      }
+      throw e;
+    }
   }
 
   params(): Record<string, unknown> {
