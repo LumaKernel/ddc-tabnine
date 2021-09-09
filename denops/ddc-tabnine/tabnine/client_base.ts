@@ -2,10 +2,11 @@ import { assert, fs, io, Mutex, path, semver, unZipFromFile } from "../deps.ts";
 
 export class TabNine {
   private proc?: Deno.Process;
-  private procAlive = false;
+  private lines?: AsyncIterator<string>;
+  private runningBinaryPath?: string;
+
   private binaryPath?: string;
   private mutex = new Mutex();
-  private lines?: AsyncIterator<string>;
   private numRestarts = 0;
 
   constructor(
@@ -27,10 +28,10 @@ export class TabNine {
     request: unknown,
   ): Promise<unknown> {
     const requestStr = JSON.stringify(request) + "\n";
-    if (!this.isChildAlive()) {
-      await this.restartChildLimited();
+    if (!this.isRunning()) {
+      await this.restartProcLimited();
     }
-    if (!this.isChildAlive()) {
+    if (!this.isRunning()) {
       throw new Error("TabNine process is dead.");
     }
     assert(this.proc?.stdin, "this.proc.stdin");
@@ -46,16 +47,16 @@ export class TabNine {
     return undefined;
   }
 
-  private isChildAlive(): boolean {
-    return Boolean(this.proc) && this.procAlive;
+  isRunning(): boolean {
+    return Boolean(this.proc);
   }
 
-  async restartChild(): Promise<void> {
+  async restartProc(): Promise<void> {
     this.numRestarts = 0;
-    await this.restartChildLimited();
+    await this.restartProcLimited();
   }
 
-  private async restartChildLimited(): Promise<void> {
+  private async restartProcLimited(): Promise<void> {
     if (this.numRestarts >= 10) {
       return;
     }
@@ -72,14 +73,15 @@ export class TabNine {
     const binaryPath = this.binaryPath ||
       await this.getBinaryPath();
 
+    this.runningBinaryPath = binaryPath;
     this.proc = Deno.run({
       cmd: [binaryPath, ...args],
       stdin: "piped",
       stdout: "piped",
     });
-    this.procAlive = true;
     void this.proc.status().then(() => {
-      this.procAlive = false;
+      this.proc = undefined;
+      this.runningBinaryPath = undefined;
     });
     assert(this.proc.stdout, "this.proc.stdout");
     this.lines = io.readLines(this.proc.stdout);
@@ -204,6 +206,10 @@ export class TabNine {
       }
     }
     return versions;
+  }
+
+  getRunningBinaryPath(): string | null {
+    return this.runningBinaryPath ?? null;
   }
 
   async getBinaryPath(): Promise<string> {

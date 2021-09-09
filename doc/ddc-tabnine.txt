@@ -11,6 +11,7 @@ INTRODUCTION					    |ddc-tabnine-introduction|
 INSTALL							 |ddc-tabnine-install|
 EXAMPLES						|ddc-tabnine-examples|
 PARAMS							  |ddc-tabnine-params|
+FUNCTIONS					       |ddc-tabnine-functions|
 
 ==============================================================================
 INTRODUCTION					    *ddc-tabnine-introduction*
@@ -27,6 +28,14 @@ Please install both "ddc.vim" and "denops.vim".
 https://github.com/Shougo/ddc.vim
 https://github.com/vim-denops/denops.vim
 
+You can trigger the
+special comands (https://www.tabnine.com/faq#special_commands) to configure
+your TabNine like `TabNine::config` in any buffer.
+
+(Optional) To configure your purchased API key, use `TabNine::config` or
+`:exe 'e' ddc_tabnine#config_dir() . '/tabnine_config.json'`.
+
+See also |ddc_tabnine#config_dir()|.
 
 ==============================================================================
 EXAMPLES						*ddc-tabnine-examples*
@@ -64,6 +73,40 @@ storageDir	(string)
 		Storage path placement to store binary files.
 
 		Default: <XDG Cache Dir>
+
+==============================================================================
+FUNCTIONS					       *ddc-tabnine-functions*
+
+						       *ddc_tabnine#restart()*
+ddc_tabnine#restart()
+		Restart the TabNine process.
+
+						     *ddc_tabnine#reinstall()*
+ddc_tabnine#reinstall()
+		Clean all version binaries, reinstall binaries and restart the
+		process.
+
+						    *ddc_tabnine#is_running()*
+ddc_tabnine#is_running()
+		Returns boolean value whether Process is running.
+
+							 *ddc_tabnine#which()*
+ddc_tabnine#which()
+		Returns string value which binary is used to run.
+
+						       *ddc_tabnine#version()*
+ddc_tabnine#version()
+		Returns string value by querying TabNine::version to TabNine
+		process.
+
+						    *ddc_tabnine#config_dir()*
+ddc_tabnine#config_dir()
+		Returns string value by querying TabNine::config_dir to TabNine
+		process.
+Example: >
+	command! -bar EditTabNineConfig
+	    \ execute 'edit' ddc_tabnine#config_dir() . '/tabnine_config.json'
+<
 
 ==============================================================================
 vim:tw=78:ts=8:noet:ft=help:norl

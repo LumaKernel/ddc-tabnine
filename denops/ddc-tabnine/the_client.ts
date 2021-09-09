@@ -7,17 +7,11 @@ class ClientCreator {
   private mutex = new Mutex();
   private clientStorageDir?: string;
 
-  isStarted(): boolean {
-    return Boolean(this.client);
-  }
-
-  private recreateClient(storageDir: string) {
-    const oldClient = this.client;
-    const oldClientCloser = this.clientCloser;
+  private recreateClient(storageDir: string): TabNineV2 {
+    this.clientCloser?.();
     this.client = undefined;
     this.clientCloser = undefined;
     this.clientStorageDir = storageDir;
-    oldClient?.close();
     const newClient = this.client = new TabNineV2(
       "ddc.vim",
       storageDir,
@@ -51,14 +45,15 @@ class ClientCreator {
         } catch (e: unknown) {
           try {
             console.error(
-              `[ddc-tabnine] Failed to TabNine cli version ${version}.`,
+              `[ddc-tabnine] Failed to install TabNine cli version ${version}.`,
             );
           } finally {
             await client.cleanTabNine(version);
-            throw e;
           }
+          throw e;
         }
       }
+      await client.restartProc();
       return client;
     }
     return this.client;

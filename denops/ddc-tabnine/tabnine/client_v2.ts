@@ -1,3 +1,4 @@
+// deno-lint-ignore-file camelcase
 import { TabNine } from "./client_base.ts";
 
 export interface TabNineV2AutoCompleteRequest {
