@@ -6,7 +6,7 @@
 
 This source collects candidates from [TabNine](https://www.tabnine.com).
 
-**EXPERIMENTAL**: Using some [undocumented featuers](##Why-Experimental).
+**EXPERIMENTAL**: Using some [undocumented features](#why-experimental).
 
 ## Required
 
@@ -28,7 +28,7 @@ call ddc#custom#patch_global('sourceOptions', {
 ## Special Commands
 
 You can trigger the
-[special comands](https://www.tabnine.com/faq#special_commands) to configure
+[special commands](https://www.tabnine.com/faq#special_commands) to configure
 your TabNine like `TabNine::config` in any buffer.
 
 (Optional) To configure your purchased API key, use `TabNine::config` or
