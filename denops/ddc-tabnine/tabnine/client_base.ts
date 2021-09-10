@@ -113,12 +113,6 @@ export class TabNine {
     const url =
       `https://update.tabnine.com/bundles/${version}/${archAndPlatform}/TabNine.zip`;
 
-    const binaries = [
-      "TabNine",
-      "TabNine-deep-cloud",
-      "TabNine-deep-local",
-      "WD-TabNine",
-    ];
     const zipPath = path.join(destDir, path.basename(url));
     await fs.ensureDir(destDir);
     const res = await fetch(url);
@@ -136,13 +130,8 @@ export class TabNine {
       }
       await Deno.remove(zipPath);
     }
-    for (let b of binaries) {
-      if (Deno.build.os == "windows") b = b + ".exe";
-      const fullpath = path.resolve(destDir, b);
-
-      if (await fs.exists(fullpath)) {
-        await Deno.chmod(fullpath, 0o755);
-      }
+    for await (const entry of await Deno.readDir(destDir)) {
+      await Deno.chmod(path.resolve(destDir, entry.name), 0o755);
     }
   }
 
