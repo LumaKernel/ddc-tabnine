@@ -12,21 +12,14 @@ import { getAround } from "../ddc-tabnine/internal_autoload_fn.ts";
 
 type Params = {
   maxSize: number;
-  maxNumResults: number;
   storageDir: string;
 };
 
 export class Source extends BaseSource {
-  static readonly defaultParams: Readonly<Params> = {
-    maxSize: 200,
-    maxNumResults: 5,
-    storageDir: defaultStorageDir,
-  };
-
   async gatherCandidates(
     args: GatherCandidatesArguments,
   ): Promise<Candidate[]> {
-    const p = args.sourceParams as Partial<Params>;
+    const p = args.sourceParams as Params;
 
     const [
       filename,
@@ -34,9 +27,9 @@ export class Source extends BaseSource {
       after,
       regionIncludesBeginning,
       regionIncludesEnd,
-    ] = await getAround(args.denops, p.maxSize || Source.defaultParams.maxSize);
+    ] = await getAround(args.denops, p.maxSize);
     const req: TabNineV2AutoCompleteRequest = {
-      maxNumResults: p.maxNumResults || Source.defaultParams.maxNumResults,
+      maxNumResults: args.sourceOptions.maxCandidates,
       filename,
       before,
       after,
@@ -58,7 +51,10 @@ export class Source extends BaseSource {
     return cs;
   }
 
-  params(): Record<string, unknown> {
-    return { ...Source.defaultParams };
+  params(): Params {
+    return {
+      maxSize: 200,
+      storageDir: defaultStorageDir,
+    };
   }
 }

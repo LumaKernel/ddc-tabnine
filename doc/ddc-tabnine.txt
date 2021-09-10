@@ -44,6 +44,7 @@ EXAMPLES						*ddc-tabnine-examples*
 	call ddc#custom#patch_global('sourceOptions', {
 	    \ 'tabnine': {
 	    \   'mark': 'TN',
+	    \   'maxCandidates': 5,
 	    \   'isVolatile': v:true,
 	    \   'maxSize': 200,
 	    \ }})
@@ -59,17 +60,9 @@ maxSize		(number)
 
 		Default: 200
 
-					     *ddc-tabnine-param-maxNumResults*
-maxNumResults	(number)
-		Max number of results to retrieve. Preferable to use rather
-		than built-in's |ddc-source-option-maxCandidates| since this
-		is natively implemented by TabNine.
-
-		Default: 5
-
 						*ddc-tabnine-param-storageDir*
 storageDir	(string)
-		Global only and not configurable by `_`.
+		NOTE: Global only and not configurable by `_` (wildcard).
 		Storage path placement to store binary files.
 
 		Default: <XDG Cache Dir>
