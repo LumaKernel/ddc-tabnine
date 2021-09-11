@@ -3,6 +3,7 @@ import { Denops, path, xdg } from "./deps.ts";
 export const defaultStorageDir = path.join(
   xdg.cache(),
   "ddc-tabnine",
+  "binaries",
 );
 
 export async function getStorageDir(denops: Denops): Promise<string> {

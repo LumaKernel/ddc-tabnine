@@ -22,7 +22,6 @@ call ddc#custom#patch_global('sourceOptions', {
     \   'mark': 'TN',
     \   'maxCandidates': 5,
     \   'isVolatile': v:true,
-    \   'maxSize': 200,
     \ }})
 ```
 

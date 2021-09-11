@@ -46,7 +46,10 @@ EXAMPLES						*ddc-tabnine-examples*
 	    \   'mark': 'TN',
 	    \   'maxCandidates': 5,
 	    \   'isVolatile': v:true,
-	    \   'maxSize': 200,
+	    \ }})
+	call ddc#custom#patch_global('sourceParams', {
+	    \ 'tabnine': {
+	    \   'storageDir': expand('~/.cache/....'),
 	    \ }})
 <
 
@@ -64,8 +67,11 @@ maxSize		(number)
 storageDir	(string)
 		NOTE: Global only and not configurable by `_` (wildcard).
 		Storage path placement to store binary files.
+		<storageDir>/<version>/<arch>/TabNine(.exe) will be used for
+		execution. If not present, binary will be installed
+		automatically.
 
-		Default: <XDG Cache Dir>
+		Default: <XDG Cache Dir>/ddc-tabnine/binaries
 
 ==============================================================================
 FUNCTIONS					       *ddc-tabnine-functions*
@@ -76,8 +82,8 @@ ddc_tabnine#restart()
 
 						     *ddc_tabnine#reinstall()*
 ddc_tabnine#reinstall()
-		Clean all version binaries, reinstall binaries and restart the
-		process.
+		Clean all version binaries for current architecture, reinstall
+		binaries and restart the process.
 
 						    *ddc_tabnine#is_running()*
 ddc_tabnine#is_running()

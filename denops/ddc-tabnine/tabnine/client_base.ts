@@ -1,5 +1,15 @@
 import { assert, fs, io, Mutex, path, semver, unZipFromFile } from "../deps.ts";
 
+// https://github.com/denoland/deno_std/issues/1216
+const exists = async (filePath: string): Promise<boolean> => {
+  try {
+    await Deno.lstat(filePath);
+    return true;
+  } catch (_e: unknown) {
+    return false;
+  }
+};
+
 export class TabNine {
   private proc?: Deno.Process;
   private lines?: AsyncIterator<string>;
@@ -91,12 +101,11 @@ export class TabNine {
     const archAndPlatform = TabNine.getArchAndPlatform();
     const destDir = path.join(
       this.storagePath,
-      "binaries",
       version,
       archAndPlatform,
       Deno.build.os === "windows" ? "TabNine.exe" : "TabNine",
     );
-    return await fs.exists(destDir);
+    return await exists(destDir);
   }
 
   async installTabNine(
@@ -105,7 +114,6 @@ export class TabNine {
     const archAndPlatform = TabNine.getArchAndPlatform();
     const destDir = path.join(
       this.storagePath,
-      "binaries",
       version,
       archAndPlatform,
     );
@@ -146,11 +154,10 @@ export class TabNine {
     const archAndPlatform = TabNine.getArchAndPlatform();
     const destDir = path.join(
       this.storagePath,
-      "binaries",
       version,
       archAndPlatform,
     );
-    if (await fs.exists(destDir)) {
+    if (await exists(destDir)) {
       await Deno.remove(destDir, { recursive: true });
     }
   }
@@ -177,14 +184,14 @@ export class TabNine {
   async getInstalledVersions(): Promise<string[]> {
     const versions: string[] = [];
     const archAndPlatform = TabNine.getArchAndPlatform();
-    const binaries = path.join(this.storagePath, "binaries");
-    if (!(await fs.exists(binaries))) return [];
-    for await (const version of Deno.readDir(binaries)) {
+    const { storagePath } = this;
+    if (!(await exists(storagePath))) return [];
+    for await (const version of Deno.readDir(storagePath)) {
       if (
         semver.valid(version.name) &&
-        await fs.exists(
+        await exists(
           path.join(
-            binaries,
+            storagePath,
             version.name,
             archAndPlatform,
             Deno.build.os == "windows" ? "TabNine.exe" : "TabNine",
@@ -203,11 +210,11 @@ export class TabNine {
 
   async getBinaryPath(): Promise<string> {
     const archAndPlatform = TabNine.getArchAndPlatform();
-    const binaries = path.join(this.storagePath, "binaries");
+    const { storagePath } = this;
     const versions = await this.getInstalledVersions();
 
     if (!versions || versions.length == 0) {
-      throw new Error(`TabNine not installed in ${this.storagePath}`);
+      throw new Error(`TabNine not installed in ${storagePath}`);
     }
 
     const sortedVersions = TabNine.sortBySemver(versions);
@@ -215,12 +222,12 @@ export class TabNine {
     const tried: string[] = [];
     for (const version of sortedVersions) {
       const fullPath = path.join(
-        binaries,
+        storagePath,
         version,
         archAndPlatform,
         Deno.build.os == "windows" ? "TabNine.exe" : "TabNine",
       );
-      if (await fs.exists(fullPath)) {
+      if (await exists(fullPath)) {
         return fullPath;
       } else {
         tried.push(fullPath);
