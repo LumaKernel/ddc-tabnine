@@ -1,4 +1,4 @@
-import { assert, fs, io, Mutex, path, semver, unZipFromFile } from "../deps.ts";
+import { assert, decompress, fs, io, Mutex, path, semver } from "../deps.ts";
 
 // https://github.com/denoland/deno_std/issues/1216
 const exists = async (filePath: string): Promise<boolean> => {
@@ -132,7 +132,7 @@ export class TabNine {
       try {
         const reader = io.readerFromStreamReader(res.body.getReader());
         await io.copy(reader, destFile);
-        await unZipFromFile(zipPath, destDir);
+        await decompress(zipPath, destDir);
       } finally {
         destFile.close();
       }
