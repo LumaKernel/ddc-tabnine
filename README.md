@@ -6,8 +6,6 @@
 
 This source collects candidates from [TabNine](https://www.tabnine.com).
 
-**EXPERIMENTAL**: Using some [undocumented features](#why-experimental).
-
 ## Required
 
 - [denops.vim](https://github.com/vim-denops/denops.vim)
@@ -41,9 +39,3 @@ your TabNine like `TabNine::config` in any buffer.
 - https://github.com/Shougo/ddc.vim
 - https://github.com/neoclide/coc-tabnine
 - https://github.com/tbodt/deoplete-tabnine
-
-## Why Experimental?
-
-- ddc.vim itself is experimental.
-- Using undocumented dispatcher from ddc.vim
-  `denops.dispatch("ddc", "getGlobal")`.
