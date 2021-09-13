@@ -30,7 +30,7 @@ https://github.com/Shougo/ddc.vim
 https://github.com/vim-denops/denops.vim
 
 You can trigger the
-special comands (https://www.tabnine.com/faq#special_commands) to configure
+special commands (https://www.tabnine.com/faq#special_commands) to configure
 your TabNine like `TabNine::config` in any buffer.
 
 (Optional) To configure your purchased API key, use `TabNine::config` or
@@ -78,10 +78,10 @@ ddc_tabnine#storage_dir	(string)
 
 					    *ddc_tabnine#disable_auto_install*
 ddc_tabnine#disable_auto_install	(boolean)
-		Set 1 to disable automatic installation. You need to ensure
-		the binary existence.
+		Set |v:true| to disable automatic installation. You need to
+		ensure the binary existence.
 
-		Default: <XDG Cache Dir>/ddc-tabnine/binaries
+		Default: |v:false|
 
 
 ==============================================================================
