@@ -1,6 +1,8 @@
 import { Mutex } from "../ddc-tabnine/deps.ts";
+import { TabNine } from "./tabnine/client_base.ts";
 import { TabNineV2 } from "./tabnine/client_v2.ts";
 
+// This class is for singleton, and not targeting to keep it pure.
 class ClientCreator {
   private client?: TabNineV2;
   private clientCloser?: () => void;
@@ -23,24 +25,32 @@ class ClientCreator {
   async reinstall(storageDir: string): Promise<void> {
     const release = await this.mutex.acquire();
     try {
-      const client = await this.getClientUnlocked(storageDir);
-      await client.cleanAllVersions();
-      await client.installTabNine(await TabNineV2.getLatestVersion());
+      await TabNine.cleanAllVersions(storageDir);
+      await TabNine.installTabNine(
+        storageDir,
+        await TabNineV2.getLatestVersion(),
+      );
     } finally {
       release();
     }
   }
 
-  async getClient(storageDir: string): Promise<TabNineV2> {
+  async getClient(
+    storageDir: string,
+    autoInstall: boolean,
+  ): Promise<TabNineV2> {
     const release = await this.mutex.acquire();
     try {
-      return await this.getClientUnlocked(storageDir);
+      return await this.getClientUnlocked(storageDir, autoInstall);
     } finally {
       release();
     }
   }
 
-  async getClientUnlocked(storageDir: string): Promise<TabNineV2> {
+  async getClientUnlocked(
+    storageDir: string,
+    disabledAutoInstall: boolean,
+  ): Promise<TabNineV2> {
     if (!this.client || storageDir !== this.clientStorageDir) {
       if (this.clientStorageDir && storageDir !== this.clientStorageDir) {
         console.log("[ddc-tabnine] Storage dir is updated. Restarting...");
@@ -48,18 +58,23 @@ class ClientCreator {
       const client = this.recreateClient(storageDir);
       const version = await TabNineV2.getLatestVersion();
       if (!(await client.isInstalled(version))) {
+        if (disabledAutoInstall) {
+          throw new Error(
+            `binary is not installed at ${client.storageDir} in spite of disabled auto-install`,
+          );
+        }
         console.log(
           `[ddc-tabnine] Installing TabNine cli version ${version}...`,
         );
         try {
-          await client.installTabNine(version);
+          await TabNine.installTabNine(client.storageDir, version);
         } catch (e: unknown) {
           try {
             console.error(
               `[ddc-tabnine] Failed to install TabNine cli version ${version}.`,
             );
           } finally {
-            await client.cleanVersion(version);
+            await TabNine.cleanVersion(client.storageDir, version);
           }
           throw e;
         }

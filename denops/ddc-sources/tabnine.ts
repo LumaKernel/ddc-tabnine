@@ -3,7 +3,6 @@ import {
   Candidate,
   GatherCandidatesArguments,
 } from "../ddc-tabnine/deps.ts";
-import { defaultStorageDir } from "../ddc-tabnine/storage_dir.ts";
 import type {
   TabNineV2AutoCompleteRequest,
   TabNineV2AutoCompleteResponse,
@@ -12,7 +11,6 @@ import { getAround } from "../ddc-tabnine/internal_autoload_fn.ts";
 
 type Params = {
   maxSize: number;
-  storageDir: string;
 };
 
 export class Source extends BaseSource {
@@ -54,7 +52,6 @@ export class Source extends BaseSource {
   params(): Params {
     return {
       maxSize: 200,
-      storageDir: defaultStorageDir,
     };
   }
 }

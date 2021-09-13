@@ -11,6 +11,7 @@ INTRODUCTION					    |ddc-tabnine-introduction|
 INSTALL							 |ddc-tabnine-install|
 EXAMPLES						|ddc-tabnine-examples|
 PARAMS							  |ddc-tabnine-params|
+SETTINGS						|ddc-tabnine-settings|
 FUNCTIONS					       |ddc-tabnine-functions|
 
 ==============================================================================
@@ -63,15 +64,25 @@ maxSize		(number)
 
 		Default: 200
 
-						*ddc-tabnine-param-storageDir*
-storageDir	(string)
-		NOTE: Global only and not configurable by `_` (wildcard).
+==============================================================================
+SETTINGS					        *ddc-tabnine-settings*
+
+						     *ddc_tabnine#storage_dir*
+ddc_tabnine#storage_dir	(string)
 		Storage path placement to store binary files.
 		<storageDir>/<version>/<arch>/TabNine(.exe) will be used for
 		execution. If not present, binary will be installed
 		automatically.
 
 		Default: <XDG Cache Dir>/ddc-tabnine/binaries
+
+					    *ddc_tabnine#disable_auto_install*
+ddc_tabnine#disable_auto_install	(boolean)
+		Set 1 to disable automatic installation. You need to ensure
+		the binary existence.
+
+		Default: <XDG Cache Dir>/ddc-tabnine/binaries
+
 
 ==============================================================================
 FUNCTIONS					       *ddc-tabnine-functions*
