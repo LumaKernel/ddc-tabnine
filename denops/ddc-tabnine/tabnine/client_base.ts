@@ -21,7 +21,7 @@ export class TabNine {
 
   constructor(
     public clientName: string,
-    public storagePath: string,
+    public storageDir: string,
   ) {}
 
   async request(request: unknown): Promise<unknown> {
@@ -81,7 +81,7 @@ export class TabNine {
     ];
 
     const binaryPath = this.binaryPath ||
-      await this.getBinaryPath();
+      await TabNine.getBinaryPath(this.storageDir);
 
     this.runningBinaryPath = binaryPath;
     this.proc = Deno.run({
@@ -100,7 +100,7 @@ export class TabNine {
   async isInstalled(version: string): Promise<boolean> {
     const archAndPlatform = TabNine.getArchAndPlatform();
     const destDir = path.join(
-      this.storagePath,
+      this.storageDir,
       version,
       archAndPlatform,
       Deno.build.os === "windows" ? "TabNine.exe" : "TabNine",
@@ -108,12 +108,13 @@ export class TabNine {
     return await exists(destDir);
   }
 
-  async installTabNine(
+  static async installTabNine(
+    storageDir: string,
     version: string,
   ): Promise<void> {
     const archAndPlatform = TabNine.getArchAndPlatform();
     const destDir = path.join(
-      this.storagePath,
+      storageDir,
       version,
       archAndPlatform,
     );
@@ -143,17 +144,20 @@ export class TabNine {
     }
   }
 
-  async cleanAllVersions(): Promise<void> {
-    const versions = await this.getInstalledVersions();
-    await Promise.all(versions.map((ver) => this.cleanVersion(ver)));
+  static async cleanAllVersions(storageDir: string): Promise<void> {
+    const versions = await TabNine.getInstalledVersions(storageDir);
+    await Promise.all(
+      versions.map((ver) => TabNine.cleanVersion(storageDir, ver)),
+    );
   }
 
-  async cleanVersion(
+  static async cleanVersion(
+    storageDir: string,
     version: string,
   ): Promise<void> {
     const archAndPlatform = TabNine.getArchAndPlatform();
     const destDir = path.join(
-      this.storagePath,
+      storageDir,
       version,
       archAndPlatform,
     );
@@ -181,17 +185,16 @@ export class TabNine {
     return version;
   }
 
-  async getInstalledVersions(): Promise<string[]> {
+  static async getInstalledVersions(storageDir: string): Promise<string[]> {
     const versions: string[] = [];
     const archAndPlatform = TabNine.getArchAndPlatform();
-    const { storagePath } = this;
-    if (!(await exists(storagePath))) return [];
-    for await (const version of Deno.readDir(storagePath)) {
+    if (!(await exists(storageDir))) return [];
+    for await (const version of Deno.readDir(storageDir)) {
       if (
         semver.valid(version.name) &&
         await exists(
           path.join(
-            storagePath,
+            storageDir,
             version.name,
             archAndPlatform,
             Deno.build.os == "windows" ? "TabNine.exe" : "TabNine",
@@ -208,13 +211,12 @@ export class TabNine {
     return this.runningBinaryPath ?? null;
   }
 
-  async getBinaryPath(): Promise<string> {
+  static async getBinaryPath(storageDir: string): Promise<string> {
     const archAndPlatform = TabNine.getArchAndPlatform();
-    const { storagePath } = this;
-    const versions = await this.getInstalledVersions();
+    const versions = await TabNine.getInstalledVersions(storageDir);
 
     if (!versions || versions.length == 0) {
-      throw new Error(`TabNine not installed in ${storagePath}`);
+      throw new Error(`TabNine not installed in ${storageDir}`);
     }
 
     const sortedVersions = TabNine.sortBySemver(versions);
@@ -222,7 +224,7 @@ export class TabNine {
     const tried: string[] = [];
     for (const version of sortedVersions) {
       const fullPath = path.join(
-        storagePath,
+        storageDir,
         version,
         archAndPlatform,
         Deno.build.os == "windows" ? "TabNine.exe" : "TabNine",
