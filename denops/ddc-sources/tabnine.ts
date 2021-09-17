@@ -35,8 +35,6 @@ export class Source extends BaseSource {
       regionIncludesBeginning,
       regionIncludesEnd,
     };
-    console.log(`_x_[XXX]_x_ eeeeeeeeee`);
-    console.log({ before, after });
     const resUnknown: unknown = await args.denops.dispatch(
       "ddc-tabnine",
       "internalRequestAutocomplete",
