@@ -11,6 +11,7 @@ import { getAround } from "../ddc-tabnine/internal_autoload_fn.ts";
 
 type Params = {
   maxSize: number;
+  maxNumResults: number;
 };
 
 export class Source extends BaseSource {
@@ -27,7 +28,7 @@ export class Source extends BaseSource {
       regionIncludesEnd,
     ] = await getAround(args.denops, p.maxSize);
     const req: TabNineV2AutoCompleteRequest = {
-      maxNumResults: args.sourceOptions.maxCandidates,
+      maxNumResults: p.maxNumResults,
       filename,
       before,
       after,
@@ -44,7 +45,9 @@ export class Source extends BaseSource {
     const cs: Candidate[] =
       res?.results?.filter((e) => e?.new_prefix).map((e) => ({
         word: e.new_prefix,
+        abbr: e.new_prefix + (e.new_suffix ?? ""),
         menu: e.detail ?? undefined,
+        user_data: JSON.stringify(e),
       })) ?? [];
     return cs;
   }
@@ -52,6 +55,7 @@ export class Source extends BaseSource {
   params(): Params {
     return {
       maxSize: 200,
+      maxNumResults: 5,
     };
   }
 }

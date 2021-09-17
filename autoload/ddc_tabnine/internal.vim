@@ -13,12 +13,12 @@ function! ddc_tabnine#internal#get_around(limit) abort
   let before_line = max([1, line - a:limit])
   let before_lines = getline(before_line, line)
   if len(before_lines) > 0
-    let before_lines[-1] = before_lines[-1][: col - 1]
+    let before_lines[-1] = before_lines[-1][: col - 2]
   endif
   let after_line = min([last_line, line + a:limit])
   let after_lines = getline(line, after_line)
   if len(after_lines) > 0
-    let after_lines[0] = after_lines[0][col :]
+    let after_lines[0] = after_lines[0][col - 1:]
   endif
 
   let filename = bufname()
