@@ -74,7 +74,8 @@ export class TabNine {
     if (this.proc) {
       const oldProc = this.proc;
       this.proc = undefined;
-      oldProc.kill(Deno.Signal.SIGINT);
+      // deno-lint-ignore no-explicit-any
+      (oldProc.kill as any)((Deno as any).Signal?.SIGINT ?? "SIGINT");
     }
     const args = [
       `--client=${this.clientName}`,
@@ -167,7 +168,10 @@ export class TabNine {
   }
 
   close() {
-    this.proc?.kill(Deno.Signal.SIGINT);
+    if (this.proc) {
+      // deno-lint-ignore no-explicit-any
+      (this.proc.kill as any)((Deno as any).Signal?.SIGINT ?? "SIGINT");
+    }
   }
 
   static async getLatestVersion(): Promise<string> {
