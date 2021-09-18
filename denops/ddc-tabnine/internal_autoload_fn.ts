@@ -23,3 +23,13 @@ export type GetAround = (
 export const getAround = createCaller(
   "ddc_tabnine#internal#get_around",
 ) as GetAround;
+
+export type OnCompleteDone = (
+  denops: Denops,
+  oldSuffix: string,
+  newPrefixMore: string,
+  newSuffix: string,
+) => Promise<void>;
+export const onCompleteDone = createCaller(
+  "ddc_tabnine#internal#on_complete_done",
+) as OnCompleteDone;

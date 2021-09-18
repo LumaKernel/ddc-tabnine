@@ -2,22 +2,32 @@ import {
   BaseSource,
   Candidate,
   GatherCandidatesArguments,
+  OnCompleteDoneArguments,
 } from "../ddc-tabnine/deps.ts";
 import type {
   TabNineV2AutoCompleteRequest,
   TabNineV2AutoCompleteResponse,
 } from "../ddc-tabnine/tabnine/client_v2.ts";
-import { getAround } from "../ddc-tabnine/internal_autoload_fn.ts";
+import * as internal from "../ddc-tabnine/internal_autoload_fn.ts";
 
 type Params = {
   maxSize: number;
   maxNumResults: number;
 };
 
-export class Source extends BaseSource {
+type UserData = {
+  /** Delete suffix length */
+  s: string;
+  /** Add as prefix */
+  P: string;
+  /** Add as suffix */
+  S: string;
+};
+
+export class Source extends BaseSource<Params, UserData> {
   async gatherCandidates(
-    args: GatherCandidatesArguments,
-  ): Promise<Candidate[]> {
+    args: GatherCandidatesArguments<Params>,
+  ): Promise<Candidate<UserData>[]> {
     const p = args.sourceParams as Params;
 
     const [
@@ -26,7 +36,7 @@ export class Source extends BaseSource {
       after,
       regionIncludesBeginning,
       regionIncludesEnd,
-    ] = await getAround(args.denops, p.maxSize);
+    ] = await internal.getAround(args.denops, p.maxSize);
     const req: TabNineV2AutoCompleteRequest = {
       maxNumResults: p.maxNumResults,
       filename,
@@ -42,16 +52,20 @@ export class Source extends BaseSource {
     );
     // deno-lint-ignore no-explicit-any
     const res: TabNineV2AutoCompleteResponse = resUnknown as any;
-    const cs: Candidate[] =
-      res?.results?.filter((e) => e?.new_prefix).map((e) => ({
-        word: e.new_prefix,
-        abbr: e.new_prefix + (e.new_suffix ?? ""),
-        menu: e.detail ?? undefined,
-        user_data: {
-          new_suffix: e.new_suffix,
-          old_suffix: e.old_suffix,
-        },
-      })) ?? [];
+    const cs: Candidate<UserData>[] =
+      (res?.results?.filter((e) => e?.new_prefix).map((e) => {
+        const newLine = e.new_prefix.indexOf("\n");
+        return {
+          word: newLine === -1 ? e.new_prefix : e.new_prefix.slice(0, newLine),
+          abbr: e.new_prefix + (e.new_suffix ?? ""),
+          menu: e.detail ?? undefined,
+          user_data: {
+            s: e.old_suffix,
+            P: (newLine === -1 ? "" : e.new_prefix.slice(newLine)),
+            S: e.new_suffix,
+          },
+        };
+      }) ?? []);
     return cs;
   }
 
@@ -60,5 +74,18 @@ export class Source extends BaseSource {
       maxSize: 200,
       maxNumResults: 5,
     };
+  }
+
+  async onCompleteDone(
+    args: OnCompleteDoneArguments<Params, UserData>,
+  ): Promise<void> {
+    const { s: oldSuffix, P: newPrefixMore, S: newSuffix } = args
+      .userData;
+    await internal.onCompleteDone(
+      args.denops,
+      oldSuffix,
+      newPrefixMore,
+      newSuffix,
+    );
   }
 }

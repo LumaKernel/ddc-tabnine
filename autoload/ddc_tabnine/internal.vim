@@ -35,3 +35,21 @@ function! ddc_tabnine#internal#get_around(limit) abort
     \ region_includes_end,
   \ ]
 endfunction
+
+" @param {string} oldSuffix
+" @param {string} newPrefixMore
+" @param {string} newSuffix
+function! ddc_tabnine#internal#on_complete_done(old_suffix, new_prefix_more, new_suffix) abort
+  if mode() !=# 'i'
+    return
+  endif
+  let col = col('.')
+  let text = getline('.')
+  call setline(line('.'), text[: col - 2] . text[len(a:old_suffix) + col - 1 :])
+
+  call feedkeys(a:new_prefix_more, 'i')
+
+  let col = col('.')
+  let text = getline('.')
+  call setline(line('.'), text[: col - 2] . a:new_suffix . text[col - 1 :])
+endfunction
