@@ -47,7 +47,10 @@ export class Source extends BaseSource {
         word: e.new_prefix,
         abbr: e.new_prefix + (e.new_suffix ?? ""),
         menu: e.detail ?? undefined,
-        user_data: JSON.stringify(e),
+        user_data: {
+          new_suffix: e.new_suffix,
+          old_suffix: e.old_suffix,
+        },
       })) ?? [];
     return cs;
   }
