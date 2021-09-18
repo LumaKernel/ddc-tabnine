@@ -65,6 +65,14 @@ maxSize		(number)
 
 		Default: 200
 
+					     *ddc-tabnine-param-maxNumResults*
+maxNumResults	(number)
+		Max number of results to retrieve. This is natively 
+		implemented by TabNine and run before filtering compared to
+		|ddc-source-option-maxCandidates|.
+
+		Default: 5
+
 ==============================================================================
 SETTINGS					        *ddc-tabnine-settings*
 
@@ -83,15 +91,6 @@ ddc_tabnine#disable_auto_install	(boolean)
 		ensure the binary existence.
 
 		Default: |v:false|
-
-					     *ddc-tabnine-param-maxNumResults*
-maxNumResults	(number)
-		Max number of results to retrieve. This is natively 
-		implemented by TabNine and run before filtering compared to
-		|ddc-source-option-maxCandidates|.
-
-		Default: 5
-
 
 ==============================================================================
 FUNCTIONS					       *ddc-tabnine-functions*
