@@ -43,9 +43,13 @@ function! ddc_tabnine#internal#on_complete_done(old_suffix, new_prefix_more, new
   if mode() !=# 'i'
     return
   endif
+
   let col = col('.')
   let text = getline('.')
-  call setline(line('.'), text[: col - 2] . text[len(a:old_suffix) + col - 1 :])
+  if text[col - 1 : col - 2 + len(a:old_suffix)] !=# a:old_suffix
+    return
+  endif
+  call setline(line('.'), text[: col - 2] . text[col - 1 + len(a:old_suffix) :])
 
   call feedkeys(a:new_prefix_more, 'i')
 
