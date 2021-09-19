@@ -74,8 +74,7 @@ export class TabNine {
     if (this.proc) {
       const oldProc = this.proc;
       this.proc = undefined;
-      // deno-lint-ignore no-explicit-any
-      (oldProc.kill as any)((Deno as any).Signal?.SIGINT ?? "SIGINT");
+      killProcess(oldProc);
     }
     const args = [
       `--client=${this.clientName}`,
@@ -169,8 +168,7 @@ export class TabNine {
 
   close() {
     if (this.proc) {
-      // deno-lint-ignore no-explicit-any
-      (this.proc.kill as any)((Deno as any).Signal?.SIGINT ?? "SIGINT");
+      killProcess(this.proc);
     }
   }
 
@@ -280,5 +278,29 @@ export class TabNine {
     else if (a < b) return -1;
     else if (a > b) return 1;
     else return 0;
+  }
+}
+
+// https://github.com/vim-denops/denops.vim/blob/17d20561e5eb45657235e92b94b4a9c690b85900/denops/%40denops/test/tester.ts#L176-L196
+// Brought under the MIT License ( https://github.com/vim-denops/denops.vim/blob/17d20561e5eb45657235e92b94b4a9c690b85900/LICENSE ) from https://github.com/vim-denops/denops.vim
+async function killProcess(proc: Deno.Process): Promise<void> {
+  if (semver.rcompare(Deno.version.deno, "1.14.0") < 0) {
+    // Prior to v1.14.0, `Deno.Signal.SIGTERM` worked on Windows as well
+    // deno-lint-ignore no-explicit-any
+    proc.kill((Deno as any).Signal.SIGTERM);
+  } else if (Deno.build.os === "windows") {
+    // Signal API in Deno v1.14.0 on Windows
+    // does not work so use `taskkill` for now
+    const p = Deno.run({
+      cmd: ["taskkill", "/pid", proc.pid.toString(), "/F"],
+      stdin: "null",
+      stdout: "null",
+      stderr: "null",
+    });
+    await p.status();
+    p.close();
+  } else {
+    // deno-lint-ignore no-explicit-any
+    proc.kill("SIGTERM" as any);
   }
 }
