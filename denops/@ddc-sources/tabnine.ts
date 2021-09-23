@@ -16,7 +16,7 @@ type Params = {
 };
 
 type UserData = {
-  /** Delete suffix length */
+  /** Delete suffix */
   s: string;
   /** Add as prefix */
   P: string;
