@@ -133,11 +133,18 @@ export class TabNine {
       try {
         const reader = io.readerFromStreamReader(res.body.getReader());
         await io.copy(reader, destFile);
-        await decompress(zipPath, destDir);
       } finally {
         destFile.close();
       }
-      await Deno.remove(zipPath);
+      try {
+        if (!(await decompress(zipPath, destDir))) {
+          throw new Error("failed to decompress a TabNine archive");
+        }
+      } catch (e: unknown) {
+        throw e;
+      } finally {
+        await Deno.remove(zipPath);
+      }
     }
     for await (const entry of await Deno.readDir(destDir)) {
       await Deno.chmod(path.resolve(destDir, entry.name), 0o755);
