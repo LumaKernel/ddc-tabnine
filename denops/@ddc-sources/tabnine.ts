@@ -1,7 +1,7 @@
 import {
   BaseSource,
-  Candidate,
-  GatherCandidatesArguments,
+  GatherArguments,
+  Item,
   OnCompleteDoneArguments,
 } from "../ddc-tabnine/deps.ts";
 import type {
@@ -25,9 +25,9 @@ type UserData = {
 };
 
 export class Source extends BaseSource<Params, UserData> {
-  async gatherCandidates(
-    args: GatherCandidatesArguments<Params>,
-  ): Promise<Candidate<UserData>[]> {
+  async gather(
+    args: GatherArguments<Params>,
+  ): Promise<Item<UserData>[]> {
     const p = args.sourceParams as Params;
 
     const [
@@ -52,7 +52,7 @@ export class Source extends BaseSource<Params, UserData> {
     );
     // deno-lint-ignore no-explicit-any
     const res: TabNineV2AutoCompleteResponse = resUnknown as any;
-    const cs: Candidate<UserData>[] =
+    const cs: Item<UserData>[] =
       (res?.results?.filter((e) => e?.new_prefix).map((e) => {
         const newLine = e.new_prefix.indexOf("\n");
         return {
