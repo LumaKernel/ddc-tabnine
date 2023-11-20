@@ -139,7 +139,7 @@ export class TabNine {
     if (Deno.build.os === "windows") {
       return;
     }
-    for await (const entry of await Deno.readDir(destDir)) {
+    for await (const entry of Deno.readDir(destDir)) {
       await Deno.chmod(path.resolve(destDir, entry.name), 0o755);
     }
   }
