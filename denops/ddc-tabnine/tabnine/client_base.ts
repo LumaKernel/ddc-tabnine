@@ -1,15 +1,5 @@
 import { assert, decompress, fs, io, Mutex, path, semver } from "../deps.ts";
 
-// https://github.com/denoland/deno_std/issues/1216
-const exists = async (filePath: string): Promise<boolean> => {
-  try {
-    await Deno.lstat(filePath);
-    return true;
-  } catch (_e: unknown) {
-    return false;
-  }
-};
-
 export class TabNine {
   private proc?: Deno.Process;
   private lines?: AsyncIterator<string>;
@@ -106,7 +96,7 @@ export class TabNine {
       archAndPlatform,
       Deno.build.os === "windows" ? "TabNine.exe" : "TabNine",
     );
-    return await exists(destDir);
+    return await fs.exists(destDir);
   }
 
   static async installTabNine(
@@ -171,7 +161,7 @@ export class TabNine {
       version,
       archAndPlatform,
     );
-    if (await exists(destDir)) {
+    if (await fs.exists(destDir)) {
       await Deno.remove(destDir, { recursive: true });
     }
   }
@@ -198,11 +188,11 @@ export class TabNine {
   static async getInstalledVersions(storageDir: string): Promise<string[]> {
     const versions: string[] = [];
     const archAndPlatform = TabNine.getArchAndPlatform();
-    if (!(await exists(storageDir))) return [];
+    if (!(await fs.exists(storageDir))) return [];
     for await (const version of Deno.readDir(storageDir)) {
       if (
         semver.valid(version.name) &&
-        await exists(
+        await fs.exists(
           path.join(
             storageDir,
             version.name,
@@ -239,7 +229,7 @@ export class TabNine {
         archAndPlatform,
         Deno.build.os == "windows" ? "TabNine.exe" : "TabNine",
       );
-      if (await exists(fullPath)) {
+      if (await fs.exists(fullPath)) {
         return fullPath;
       } else {
         tried.push(fullPath);
