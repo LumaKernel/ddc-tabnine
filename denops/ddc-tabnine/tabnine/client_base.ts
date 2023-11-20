@@ -45,10 +45,11 @@ export class TabNine {
       throw new Error("TabNine process is dead.");
     }
     assert(this.proc?.stdin, "this.proc.stdin");
-    await io.writeAll(
-      this.proc.stdin,
-      new TextEncoder().encode(requestStr),
+    await new Blob([requestStr]).stream().pipeTo(
+      this.proc.stdin.writable,
+      { preventClose: true },
     );
+
     const responseResult = await this.lines?.next();
     if (responseResult && !responseResult.done) {
       const response: unknown = JSON.parse(responseResult.value);
@@ -131,8 +132,7 @@ export class TabNine {
         create: true,
       });
       try {
-        const reader = io.readerFromStreamReader(res.body.getReader());
-        await io.copy(reader, destFile);
+        await res.body.pipeTo(destFile.writable);
       } finally {
         destFile.close();
       }
@@ -191,9 +191,7 @@ export class TabNine {
     if (!res.ok) {
       throw Object.assign(new Error(`Response status not ok: ${url}`), { res });
     }
-    const version = new TextDecoder().decode(
-      await io.readAll(io.readerFromStreamReader(res.body.getReader())),
-    );
+    const version = await res.text();
     return version;
   }
 
