@@ -1,7 +1,15 @@
-import { assert, decompress, fs, io, Mutex, path, semver } from "../deps.ts";
+import {
+  assert,
+  decompress,
+  fs,
+  Mutex,
+  path,
+  semver,
+  TextLineStream,
+} from "../deps.ts";
 
 export class TabNine {
-  private proc?: Deno.Process;
+  private proc?: Deno.ChildProcess;
   private lines?: AsyncIterator<string>;
   private runningBinaryPath?: string;
 
@@ -36,7 +44,7 @@ export class TabNine {
     }
     assert(this.proc?.stdin, "this.proc.stdin");
     await new Blob([requestStr]).stream().pipeTo(
-      this.proc.stdin.writable,
+      this.proc.stdin,
       { preventClose: true },
     );
 
@@ -75,17 +83,18 @@ export class TabNine {
       await TabNine.getBinaryPath(this.storageDir);
 
     this.runningBinaryPath = binaryPath;
-    this.proc = Deno.run({
-      cmd: [binaryPath, ...args],
+    this.proc = new Deno.Command(binaryPath, {
+      args,
       stdin: "piped",
       stdout: "piped",
-    });
-    void this.proc.status().then(() => {
+    }).spawn();
+    void this.proc.status.then(() => {
       this.proc = undefined;
       this.runningBinaryPath = undefined;
     });
     assert(this.proc.stdout, "this.proc.stdout");
-    this.lines = io.readLines(this.proc.stdout);
+    this.lines = this.proc.stdout.pipeThrough(new TextDecoderStream())
+      .pipeThrough(new TextLineStream()).values();
   }
 
   async isInstalled(version: string): Promise<boolean> {
@@ -181,6 +190,7 @@ export class TabNine {
     if (!res.ok) {
       throw Object.assign(new Error(`Response status not ok: ${url}`), { res });
     }
+
     const version = await res.text();
     return version;
   }
@@ -281,7 +291,7 @@ export class TabNine {
 
 // https://github.com/vim-denops/denops.vim/blob/17d20561e5eb45657235e92b94b4a9c690b85900/denops/%40denops/test/tester.ts#L176-L196
 // Brought under the MIT License ( https://github.com/vim-denops/denops.vim/blob/17d20561e5eb45657235e92b94b4a9c690b85900/LICENSE ) from https://github.com/vim-denops/denops.vim
-async function killProcess(proc: Deno.Process): Promise<void> {
+async function killProcess(proc: Deno.ChildProcess): Promise<void> {
   if (semver.rcompare(Deno.version.deno, "1.14.0") < 0) {
     // Prior to v1.14.0, `Deno.Signal.SIGTERM` worked on Windows as well
     // deno-lint-ignore no-explicit-any
@@ -289,14 +299,13 @@ async function killProcess(proc: Deno.Process): Promise<void> {
   } else if (Deno.build.os === "windows") {
     // Signal API in Deno v1.14.0 on Windows
     // does not work so use `taskkill` for now
-    const p = Deno.run({
-      cmd: ["taskkill", "/pid", proc.pid.toString(), "/F"],
+    const p = new Deno.Command("taskkill", {
+      args: ["/pid", proc.pid.toString(), "/F"],
       stdin: "null",
       stdout: "null",
       stderr: "null",
-    });
-    await p.status();
-    p.close();
+    }).spawn();
+    await p.status;
   } else {
     // deno-lint-ignore no-explicit-any
     proc.kill("SIGTERM" as any);
