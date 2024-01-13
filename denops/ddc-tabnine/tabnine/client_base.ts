@@ -1,17 +1,15 @@
-import { assert, decompress, fs, io, Mutex, path, semver } from "../deps.ts";
-
-// https://github.com/denoland/deno_std/issues/1216
-const exists = async (filePath: string): Promise<boolean> => {
-  try {
-    await Deno.lstat(filePath);
-    return true;
-  } catch (_e: unknown) {
-    return false;
-  }
-};
+import {
+  assert,
+  decompress,
+  fs,
+  Mutex,
+  path,
+  semver,
+  TextLineStream,
+} from "../deps.ts";
 
 export class TabNine {
-  private proc?: Deno.Process;
+  private proc?: Deno.ChildProcess;
   private lines?: AsyncIterator<string>;
   private runningBinaryPath?: string;
 
@@ -45,10 +43,11 @@ export class TabNine {
       throw new Error("TabNine process is dead.");
     }
     assert(this.proc?.stdin, "this.proc.stdin");
-    await io.writeAll(
+    await new Blob([requestStr]).stream().pipeTo(
       this.proc.stdin,
-      new TextEncoder().encode(requestStr),
+      { preventClose: true },
     );
+
     const responseResult = await this.lines?.next();
     if (responseResult && !responseResult.done) {
       const response: unknown = JSON.parse(responseResult.value);
@@ -84,17 +83,18 @@ export class TabNine {
       await TabNine.getBinaryPath(this.storageDir);
 
     this.runningBinaryPath = binaryPath;
-    this.proc = Deno.run({
-      cmd: [binaryPath, ...args],
+    this.proc = new Deno.Command(binaryPath, {
+      args,
       stdin: "piped",
       stdout: "piped",
-    });
-    void this.proc.status().then(() => {
+    }).spawn();
+    void this.proc.status.then(() => {
       this.proc = undefined;
       this.runningBinaryPath = undefined;
     });
     assert(this.proc.stdout, "this.proc.stdout");
-    this.lines = io.readLines(this.proc.stdout);
+    this.lines = this.proc.stdout.pipeThrough(new TextDecoderStream())
+      .pipeThrough(new TextLineStream()).values();
   }
 
   async isInstalled(version: string): Promise<boolean> {
@@ -105,7 +105,7 @@ export class TabNine {
       archAndPlatform,
       Deno.build.os === "windows" ? "TabNine.exe" : "TabNine",
     );
-    return await exists(destDir);
+    return await fs.exists(destDir);
   }
 
   static async installTabNine(
@@ -131,8 +131,7 @@ export class TabNine {
         create: true,
       });
       try {
-        const reader = io.readerFromStreamReader(res.body.getReader());
-        await io.copy(reader, destFile);
+        await res.body.pipeTo(destFile.writable);
       } finally {
         destFile.close();
       }
@@ -149,7 +148,7 @@ export class TabNine {
     if (Deno.build.os === "windows") {
       return;
     }
-    for await (const entry of await Deno.readDir(destDir)) {
+    for await (const entry of Deno.readDir(destDir)) {
       await Deno.chmod(path.resolve(destDir, entry.name), 0o755);
     }
   }
@@ -171,7 +170,7 @@ export class TabNine {
       version,
       archAndPlatform,
     );
-    if (await exists(destDir)) {
+    if (await fs.exists(destDir)) {
       await Deno.remove(destDir, { recursive: true });
     }
   }
@@ -191,20 +190,19 @@ export class TabNine {
     if (!res.ok) {
       throw Object.assign(new Error(`Response status not ok: ${url}`), { res });
     }
-    const version = new TextDecoder().decode(
-      await io.readAll(io.readerFromStreamReader(res.body.getReader())),
-    );
+
+    const version = await res.text();
     return version;
   }
 
   static async getInstalledVersions(storageDir: string): Promise<string[]> {
     const versions: string[] = [];
     const archAndPlatform = TabNine.getArchAndPlatform();
-    if (!(await exists(storageDir))) return [];
+    if (!(await fs.exists(storageDir))) return [];
     for await (const version of Deno.readDir(storageDir)) {
       if (
         semver.valid(version.name) &&
-        await exists(
+        await fs.exists(
           path.join(
             storageDir,
             version.name,
@@ -241,7 +239,7 @@ export class TabNine {
         archAndPlatform,
         Deno.build.os == "windows" ? "TabNine.exe" : "TabNine",
       );
-      if (await exists(fullPath)) {
+      if (await fs.exists(fullPath)) {
         return fullPath;
       } else {
         tried.push(fullPath);
@@ -293,7 +291,7 @@ export class TabNine {
 
 // https://github.com/vim-denops/denops.vim/blob/17d20561e5eb45657235e92b94b4a9c690b85900/denops/%40denops/test/tester.ts#L176-L196
 // Brought under the MIT License ( https://github.com/vim-denops/denops.vim/blob/17d20561e5eb45657235e92b94b4a9c690b85900/LICENSE ) from https://github.com/vim-denops/denops.vim
-async function killProcess(proc: Deno.Process): Promise<void> {
+async function killProcess(proc: Deno.ChildProcess): Promise<void> {
   if (semver.rcompare(Deno.version.deno, "1.14.0") < 0) {
     // Prior to v1.14.0, `Deno.Signal.SIGTERM` worked on Windows as well
     // deno-lint-ignore no-explicit-any
@@ -301,14 +299,13 @@ async function killProcess(proc: Deno.Process): Promise<void> {
   } else if (Deno.build.os === "windows") {
     // Signal API in Deno v1.14.0 on Windows
     // does not work so use `taskkill` for now
-    const p = Deno.run({
-      cmd: ["taskkill", "/pid", proc.pid.toString(), "/F"],
+    const p = new Deno.Command("taskkill", {
+      args: ["/pid", proc.pid.toString(), "/F"],
       stdin: "null",
       stdout: "null",
       stderr: "null",
-    });
-    await p.status();
-    p.close();
+    }).spawn();
+    await p.status;
   } else {
     // deno-lint-ignore no-explicit-any
     proc.kill("SIGTERM" as any);
